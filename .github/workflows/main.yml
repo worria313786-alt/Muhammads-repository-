@@ -1,0 +1,48 @@
+name: Windows 11 RDP
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - name: Install Ngrok
+      run: |
+        choco install ngrok -y
+        
+    - name: Configure and Start TCP Tunnel
+      run: |
+        # Create a configuration that forces raw network TCP traffic
+        $config = @"
+        version: "3"
+        agent:
+          authtoken: "${{ secrets.NGORK_AUTH_TOKEN }}"
+        tunnels:
+          rdp:
+            proto: tcp
+            addr: 3389
+        "@
+        Set-Content -Path "ngrok.yml" -Value $config
+        Start-Process ngrok -ArgumentList "start --config=ngrok.yml rdp --region us"
+        Start-Sleep -Seconds 15
+        
+        # Pulls the active connection link and prints it cleanly in your logs
+        $tunnels = Invoke-RestMethod -Uri "http://127.0.0"
+        $publicUrl = $tunnels.tunnels.public_url
+        Write-Host "=========================================="
+        Write-Host "YOUR PHONE CONNECTION ADDRESS IS:"
+        Write-Host $publicUrl
+        Write-Host "=========================================="
+        
+    - name: Configure Windows User and RDP
+      run: |
+        $Password = ConvertTo-SecureString "RdpPassword123!" -AsPlainText -Force
+        Set-LocalUser -Name "runneradmin" -Password $Password
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        
+    - name: Keep Alive
+      run: |
+        $timeout = (Get-Date).AddHours(5)
+        while ((Get-Date) -lt $timeout) {
+            Start-Sleep -Seconds 30
+        }
