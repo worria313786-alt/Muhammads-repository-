@@ -14,16 +14,13 @@ jobs:
         
     - name: Start Free LocalTunnel Connection
       run: |
-        # Install Node.js package manager tools to use localtunnel
-        npm install -g localtunnel
-        
-        # Launch localtunnel in the background pointing to the RDP port
-        Start-Process lt -ArgumentList "--port 3389" -RedirectStandardOutput "tunnel.log"
-        Start-Sleep -Seconds 10
+        # Use npx to launch localtunnel cleanly in the background pointing to the RDP port
+        Start-Process npx -ArgumentList "localtunnel --port 3389" -RedirectStandardOutput "tunnel.log"
+        Start-Sleep -Seconds 15
         
         # Read the URL right off your screen
         Write-Host "=================== YOUR CONNECTION URL ==================="
-        Get-Content "tunnel.log"
+        if (Test-Path "tunnel.log") { Get-Content "tunnel.log" }
         Write-Host "==========================================================="
         
     - name: Keep Alive
@@ -32,6 +29,7 @@ jobs:
         while ((Get-Date) -lt $timeout) {
             Start-Sleep -Seconds 30
         }
+
 
 
         
