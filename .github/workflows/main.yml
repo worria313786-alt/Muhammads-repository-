@@ -5,25 +5,6 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-    - name: Install Ngrok
-      run: |
-        choco install ngrok -y
-        
-    - name: Configure and Start TCP Tunnel
-      run: |
-        # Authenticate token directly via CLI
-        ngrok config add-authtoken ${{ secrets.NGORK_AUTH_TOKEN }}
-        
-        # Start ngrok in background and dump all live network data into a local text log file
-        Start-Process ngrok -ArgumentList "tcp 3389 --region us" -RedirectStandardOutput "ngrok.log" -RedirectStandardError "ngrok_err.log"
-        Start-Sleep -Seconds 15
-        
-        # Open and display the text log files directly to reveal your connection port
-        Write-Host "=================== NGROK LIVE PORT LOGS ==================="
-        if (Test-Path "ngrok.log") { Get-Content "ngrok.log" }
-        if (Test-Path "ngrok_err.log") { Get-Content "ngrok_err.log" }
-        Write-Host "============================================================"
-        
     - name: Configure Windows User and RDP
       run: |
         $Password = ConvertTo-SecureString "RdpPassword123!" -AsPlainText -Force
@@ -31,11 +12,26 @@ jobs:
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         
+    - name: Start Free LocalTunnel Connection
+      run: |
+        # Install Node.js package manager tools to use localtunnel
+        npm install -g localtunnel
+        
+        # Launch localtunnel in the background pointing to the RDP port
+        Start-Process lt -ArgumentList "--port 3389" -RedirectStandardOutput "tunnel.log"
+        Start-Sleep -Seconds 10
+        
+        # Read the URL right off your screen
+        Write-Host "=================== YOUR CONNECTION URL ==================="
+        Get-Content "tunnel.log"
+        Write-Host "==========================================================="
+        
     - name: Keep Alive
       run: |
         $timeout = (Get-Date).AddHours(5)
         while ((Get-Date) -lt $timeout) {
             Start-Sleep -Seconds 30
         }
+
 
         
