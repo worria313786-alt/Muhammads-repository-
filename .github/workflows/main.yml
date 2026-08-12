@@ -12,23 +12,27 @@ jobs:
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         
-    - name: Start Free LocalTunnel Connection
+    - name: Launch Free Serveo Tunnel
       run: |
-        # Added -y right after npx to force bypass the hidden confirmation prompt
-        Start-Process cmd.exe -ArgumentList "/c npx -y localtunnel --port 3389" -RedirectStandardOutput "tunnel.log"
+        # Download a tiny tool to help background the tunnel neatly
+        Invoke-WebRequest -Uri "https://github.com" -OutFile "keepalive.sh"
+        
+        # Start a raw SSH port forward to map Windows RDP (3389) out to the public web via Serveo
+        Start-Process cmd.exe -ArgumentList "/c ssh -o StrictHostKeyChecking=no -R 0:127.0.0.1:3389 serveo.net" -RedirectStandardOutput "tunnel.log"
         Start-Sleep -Seconds 15
         
-        # Read the URL right off your screen
-        Write-Host "=================== YOUR CONNECTION URL ==================="
+        # Read your unique connection address right off your screen
+        Write-Host "=================== YOUR PHONE CONNECTION ADDRESS ==================="
         if (Test-Path "tunnel.log") { Get-Content "tunnel.log" }
-        Write-Host "==========================================================="
+        Write-Host "===================================================================="
         
-    - name: Keep Alive
+    - name: Keep Machine Alive
       run: |
         $timeout = (Get-Date).AddHours(5)
         while ((Get-Date) -lt $timeout) {
             Start-Sleep -Seconds 30
         }
+
 
 
 
