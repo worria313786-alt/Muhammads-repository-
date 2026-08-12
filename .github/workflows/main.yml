@@ -14,8 +14,8 @@ jobs:
         
     - name: Start Free LocalTunnel Connection
       run: |
-        # Use npx to launch localtunnel cleanly in the background pointing to the RDP port
-        Start-Process npx -ArgumentList "localtunnel --port 3389" -RedirectStandardOutput "tunnel.log"
+        # Launch localtunnel via cmd.exe so it processes the Node paths correctly
+        Start-Process cmd.exe -ArgumentList "/c npx localtunnel --port 3389" -RedirectStandardOutput "tunnel.log"
         Start-Sleep -Seconds 15
         
         # Read the URL right off your screen
@@ -29,6 +29,7 @@ jobs:
         while ((Get-Date) -lt $timeout) {
             Start-Sleep -Seconds 30
         }
+
 
 
 
