@@ -11,27 +11,18 @@ jobs:
         
     - name: Configure and Start TCP Tunnel
       run: |
-        # Create a configuration that forces raw network TCP traffic
-        $config = @"
-        version: "3"
-        agent:
-          authtoken: "${{ secrets.NGORK_AUTH_TOKEN }}"
-        tunnels:
-          rdp:
-            proto: tcp
-            addr: 3389
-        "@
-        Set-Content -Path "ngrok.yml" -Value $config
-        Start-Process ngrok -ArgumentList "start --config=ngrok.yml rdp --region us"
+        # Authenticate token directly via CLI
+        ngrok config add-authtoken ${{ secrets.NGORK_AUTH_TOKEN }}
+        
+        # Start ngrok in background and dump all live network data into a local text log file
+        Start-Process ngrok -ArgumentList "tcp 3389 --region us" -RedirectStandardOutput "ngrok.log" -RedirectStandardError "ngrok_err.log"
         Start-Sleep -Seconds 15
         
-        # Pulls the active connection link and prints it cleanly in your logs
-        $tunnels = Invoke-RestMethod -Uri "http://127.0.0"
-        $publicUrl = $tunnels.tunnels.public_url
-        Write-Host "=========================================="
-        Write-Host "YOUR PHONE CONNECTION ADDRESS IS:"
-        Write-Host $publicUrl
-        Write-Host "=========================================="
+        # Open and display the text log files directly to reveal your connection port
+        Write-Host "=================== NGROK LIVE PORT LOGS ==================="
+        if (Test-Path "ngrok.log") { Get-Content "ngrok.log" }
+        if (Test-Path "ngrok_err.log") { Get-Content "ngrok_err.log" }
+        Write-Host "============================================================"
         
     - name: Configure Windows User and RDP
       run: |
@@ -46,3 +37,5 @@ jobs:
         while ((Get-Date) -lt $timeout) {
             Start-Sleep -Seconds 30
         }
+
+        
