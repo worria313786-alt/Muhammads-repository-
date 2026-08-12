@@ -12,16 +12,16 @@ jobs:
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         
-    - name: Launch Free Serveo Tunnel
+    - name: Launch Free Pagekite Tunnel
       run: |
-        # Download a tiny tool to help background the tunnel neatly
-        Invoke-WebRequest -Uri "https://github.com" -OutFile "keepalive.sh"
+        # Download the official standalone pagekite tool for Windows
+        Invoke-WebRequest -Uri "https://pagekite.net" -OutFile "pagekite.py"
         
-        # Start a raw SSH port forward to map Windows RDP (3389) out to the public web via Serveo
-        Start-Process cmd.exe -ArgumentList "/c ssh -o StrictHostKeyChecking=no -R 0:127.0.0.1:3389 serveo.net" -RedirectStandardOutput "tunnel.log"
+        # Start a raw network TCP tunnel on port 3389 and dump the connection info to a log file
+        Start-Process python -ArgumentList "pagekite.py 3389 tcp+raw" -RedirectStandardOutput "tunnel.log"
         Start-Sleep -Seconds 15
         
-        # Read your unique connection address right off your screen
+        # Display the custom connection link on your screen
         Write-Host "=================== YOUR PHONE CONNECTION ADDRESS ==================="
         if (Test-Path "tunnel.log") { Get-Content "tunnel.log" }
         Write-Host "===================================================================="
@@ -32,6 +32,7 @@ jobs:
         while ((Get-Date) -lt $timeout) {
             Start-Sleep -Seconds 30
         }
+
 
 
 
